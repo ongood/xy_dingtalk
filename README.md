@@ -43,6 +43,15 @@
 |             向钉钉上传素材             |                √                 |
 |           推送钉钉各类型消息           |                √                 |
 
+## ✨ 后续其他计划
+
+- 升级钉钉、企业微信模块，支持oa审批
+- odoo工作流模块，对标java的Camunda工作流实现，可在线编辑
+- odoo oa模块
+- odoo商城模块
+- ......
+
+
 ## 🔨 使用
 
 ### 配置钉钉应用参数
@@ -79,6 +88,6 @@
 
 <img src="./static/img/knowledge_star.png" style="width: 300px">
 
-更多模块或进群交流欢迎加微信: 
+更多模块请进群交流: 
 
-<img src="./static/img/wx_qrcode.png" style="width: 200px">
+<img src="./static/img/ding_group.png" style="width: 200px">

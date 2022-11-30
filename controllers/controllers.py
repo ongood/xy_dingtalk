@@ -39,11 +39,6 @@ class DingTalkController(http.Controller):
             join_url(host, redirect_uri)
         }
 
-    async def test_api(self, ding_request):
-        with open('/Users/admin/workspace/python_project/odoo-16/test_addons/dingtalk/static/all_users.png', 'rb') as f:
-            content = f.read()
-            print(ding_request.upload_media('image', content, 'all_users.png'))
-
     @route('/ding/oauth2/login/<int:app_id>', type='http', auth='public')
     def login_by_oauth2(self, authCode, app_id):
         """
