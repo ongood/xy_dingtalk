@@ -110,7 +110,6 @@ class DingTalkController(http.Controller):
 
         event_type = content['EventType']
         if event_type != 'check_url':
-            print(content, event_type)
             model = None
             if re.match(r'^user_.*?_org$', event_type) is not None:
                 model = request.env['hr.employee']

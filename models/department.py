@@ -1,6 +1,7 @@
 import asyncio
 
-from odoo import models, fields
+from odoo import models, fields, SUPERUSER_ID, api
+from ..common.ding_request import ding_request_instance
 
 
 class Department(models.Model):
@@ -96,11 +97,92 @@ class Department(models.Model):
 
         await asyncio.gather(*tasks)
 
+    @staticmethod
+    def get_depart_info_by_ding_ids(app_key, app_secret, ding_ids):
+        """
+        get departmengt info by dingtalk dept ding_id list
+        :param app_key:
+        :param app_secret:
+        :param ding_ids:
+        :return: info list
+        """
+        department_infos = []
+
+        ding_request = ding_request_instance(app_key, app_secret)
+        tasks = []
+
+        async def _add_wait(id):
+            dept_info = await ding_request.department_detail(id)
+            department_infos.append(dept_info)
+
+        for ding_id in ding_ids:
+            tasks.append(_add_wait(ding_id))
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(asyncio.gather(*tasks))
+        loop.close()
+        return department_infos
+
+    def get_main_manager_by_user_ding_ids(self, ding_ids, company_id):
+        """
+        get main manager by user dingtalk id list
+        :param ding_ids:
+        :param company_id:
+        :return:
+        """
+        manager_user_id = ding_ids[0] if len(ding_ids) > 0 else False
+        manager = self.env['hr.employee'].search(
+            [('ding_userid', '=', manager_user_id), ('company_id', '=', company_id)])
+        return manager
+
     def on_ding_org_dept_create(self, content, app):
-        pass
+        department_infos = self.get_depart_info_by_ding_ids(app.app_key, app.app_secret, content['DeptId'])
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
+        for dept in department_infos:
+            manager = self.get_main_manager_by_user_ding_ids(dept['dept_manager_userid_list'], app.company_id.id)
+
+            parent_id = dept.get('parent_id', None)  # root department has no parent_id
+            parent_department = self.search([('ding_id', '=', parent_id)])
+            self.create({
+                'company_id': app.company_id.id,
+                'ding_id': dept['dept_id'],
+                'name': dept['name'],
+                'ding_parent_id': parent_id,
+                'parent_id': parent_department.id,
+                'ding_order': dept['order'],
+                'manager_id': manager.id
+            })
 
     def on_ding_org_dept_modify(self, content, app):
-        pass
+        """
+        when dingtalk department modify, update the department info and manager
+        :param content:
+        :param app:
+        :return:
+        """
+        department_infos = self.get_depart_info_by_ding_ids(app.app_key, app.app_secret, content['DeptId'])
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
+        for dept in department_infos:
+            manager = self.get_main_manager_by_user_ding_ids(dept['dept_manager_userid_list'], app.company_id.id)
+
+            department = self.search([('ding_id', '=', dept['dept_id'])])
+            parent_id = dept.get('parent_id', None)  # root department has no parent_id
+            parent_department = self.search([('ding_id', '=', parent_id)])
+            if department:
+                department.write({
+                    'name': dept['name'],
+                    'ding_parent_id': parent_id,
+                    'parent_id': parent_department.id,
+                    'ding_order': dept['order'],
+                    'manager_id': manager.id
+                })
 
     def on_ding_org_dept_remove(self, content, app):
-        pass
+        self.env = api.Environment(self._cr, SUPERUSER_ID, {})
+
+        self.search(
+            [('ding_id', 'in', content['DeptId']), ('company_id', '=', app.company_id.id)]
+        ).unlink()
