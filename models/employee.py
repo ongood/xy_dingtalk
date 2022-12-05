@@ -32,7 +32,7 @@ class Employee(models.Model):
 
     def ding_write_with_user(self, val):
         if self.user_id.id is False:
-            user = self.env['res.users'].create({
+            user = self.env['res.users'].sudo().create({
                 'name': val['name'],
                 'login': val['ding_id'],
                 'company_id': val['company_id'],
@@ -42,7 +42,7 @@ class Employee(models.Model):
             })
             val['user_id'] = user.id
         else:
-            self.user_id.write({
+            self.user_id.sudo().write({
                 'name': val['name'],
                 'active': val['active']
             })
@@ -50,9 +50,10 @@ class Employee(models.Model):
 
     def ding_create_with_user(self, val_list):
         for val in val_list:
-            user = self.env['res.users'].search([('login', '=', val['ding_id']), ('active', 'in', [True, False])])
+            user = self.env['res.users'].sudo().search(
+                [('login', '=', val['ding_id']), ('active', 'in', [True, False])])
             if user.id is False:
-                user = self.env['res.users'].create({
+                user = self.env['res.users'].sudo().create({
                     'name': val['name'],
                     'login': val['ding_id'],
                     'company_id': val['company_id'],
@@ -62,6 +63,16 @@ class Employee(models.Model):
                 })
             val['user_id'] = user.id
         return self.create(val_list)
+
+    def get_employee_job(self, job_name, company_id):
+        job = self.env['hr.job'].sudo().search(
+            [('name', '=', job_name), ('company_id', '=', company_id)])
+        if job_name and job.id is False:
+            job = self.env['hr.job'].sudo().create({
+                'name': job_name,
+                'company_id': company_id
+            })
+        return job
 
     async def sync_ding_user(self, ding_department, server_dep_id):
         ding_request = self.env.context.get('ding_request')
@@ -83,14 +94,7 @@ class Employee(models.Model):
 
         for user in user_list:
             # job
-            title = user.get('title', None)
-            job = self.env['hr.job'].search(
-                [('name', '=', title), ('company_id', '=', ding_app.company_id.id)])
-            if title and job.id is False:
-                job = self.env['hr.job'].create({
-                    'name': title,
-                    'company_id': ding_app.company_id.id
-                })
+            job = self.get_employee_job(user.get('title', None), ding_app.company_id.id)
 
             user_id = user['userid']
             unionid = user['unionid']
@@ -168,14 +172,129 @@ class Employee(models.Model):
         loop.close()
         return send_message_task.result()
 
+    @staticmethod
+    def get_user_info_by_ding_ids(app_key, app_secret, ding_ids):
+        """
+        get user info by dingtalk user ding_id list
+        :param app_key:
+        :param app_secret:
+        :param ding_ids:
+        :return:
+        """
+        user_infos = []
+
+        ding_request = ding_request_instance(app_key, app_secret)
+        tasks = []
+
+        async def _add_wait(id):
+            user_info = await ding_request.get_user_info_by_userid(id)
+            user_infos.append(user_info)
+
+        for ding_id in ding_ids:
+            tasks.append(_add_wait(ding_id))
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(asyncio.gather(*tasks))
+        loop.close()
+        return user_infos
+
     def on_ding_user_add_org(self, content, app):
-        pass
+        """
+        when user add org, create user and set department leader
+        :param content:
+        :param app:
+        :return:
+        """
+        user_infos = self.get_user_info_by_ding_ids(app.app_key, app.app_secret, content['UserId'])
+        for user in user_infos:
+            unionid = user['unionid']
+            job = self.get_employee_job(user.get('title', None), app.company_id.id)
+            main_department = self.env['hr.department'].sudo().search([('ding_id', '=', user['dept_id_list'][0])])
+            departments = self.env['hr.department'].sudo().search([('ding_id', 'in', user['dept_id_list'])])
+
+            employee = self.sudo().create({
+                'name': user['name'],
+                'ding_id': unionid,
+                'ding_userid': user['userid'],
+                'company_id': app.company_id.id,
+                'department_id': main_department.id,
+                'ding_department_ids': [(6, 0, departments.ids)],
+                'job_id': job.id,
+                'work_email': user.get('email', None),
+                'mobile_phone': user.get('mobile', None),
+                'ding_extattr': user.get('extension', None),
+                'parent_id': False,
+                'marital': False,
+                'active': user['active']
+            })
+            leader_dep_ding_ids = [i['dept_id'] for i in user['leader_in_dept'] if i['leader'] is True]
+            # set new department manager if leader_dep_ding_ids is not empty
+            if len(leader_dep_ding_ids) > 0:
+                self.env['hr.department'].sudo().search([('ding_id', 'in', leader_dep_ding_ids)]).write(
+                    {'manager_id': employee.id})
 
     def on_ding_user_modify_org(self, content, app):
-        pass
+        """
+        when user modify org, update user info and department leader
+        :param content:
+        :param app:
+        :return:
+        """
+        user_infos = self.get_user_info_by_ding_ids(app.app_key, app.app_secret, content['UserId'])
+        for user in user_infos:
+            unionid = user['unionid']
+            job = self.get_employee_job(user.get('title', None), app.company_id.id)
+            employee = self.sudo().search([('ding_id', '=', unionid), ('active', 'in', [True, False])])
+            main_department = self.env['hr.department'].sudo().search([('ding_id', '=', user['dept_id_list'][0])])
+            departments = self.env['hr.department'].sudo().search([('ding_id', 'in', user['dept_id_list'])])
+
+            if employee.id is not False:
+                employee.write({
+                    'name': user['name'],
+                    'ding_id': unionid,
+                    'ding_userid': user['userid'],
+                    'company_id': app.company_id.id,
+                    'department_id': main_department.id,
+                    'ding_department_ids': [(6, 0, departments.ids)],
+                    'job_id': job.id,
+                    'work_email': user.get('email', None),
+                    'mobile_phone': user.get('mobile', None),
+                    'ding_extattr': user.get('extension', None),
+                    'parent_id': False,
+                    'active': user['active']
+                })
+                if self.user_id.id is not False:
+                    self.user_id.sudo().write({
+                        'name': user['name'],
+                        'active': user['active']
+                    })
+                leader_dep_ding_ids = [i['dept_id'] for i in user['leader_in_dept'] if i['leader'] is True]
+                # clear department manager and then set new department manager
+                self.env['hr.department'].sudo().search([('manager_id', '=', employee.id)]).write({'manager_id': False})
+                self.env['hr.department'].sudo().search([('ding_id', 'in', leader_dep_ding_ids)]).write(
+                    {'manager_id': employee.id})
 
     def on_ding_user_leave_org(self, content, app):
-        pass
+        """
+        when user leave org, set user active to False
+        :param content:
+        :param app:
+        :return:
+        """
+        self.sudo().search(
+            [('ding_id', 'in', content['UserId']), ('active', 'in', [True, False]),
+             ('company_id', '=', app.company_id.id)]
+        ).sudo().write({'active': False})
 
     def on_ding_user_active_org(self, content, app):
-        pass
+        """
+        when user active org, set user active to True
+        :param content:
+        :param app:
+        :return:
+        """
+        self.sudo().search(
+            [('ding_id', 'in', content['UserId']), ('active', 'in', [True, False]),
+             ('company_id', '=', app.company_id.id)]
+        ).sudo().write({'active': True})

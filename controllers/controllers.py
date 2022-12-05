@@ -2,6 +2,7 @@
 import json
 import asyncio
 import re
+import warnings
 from urllib import parse
 
 from odoo import http
@@ -9,6 +10,9 @@ from odoo.http import request, route
 
 from ..common.ding_request import join_url, ding_request_instance
 from ..common.DingCallbackCrypto import DingCallbackCrypto3
+
+# Crypto will show warning, ignore it
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 class DingTalkController(http.Controller):
@@ -106,6 +110,7 @@ class DingTalkController(http.Controller):
 
         event_type = content['EventType']
         if event_type != 'check_url':
+            print(content, event_type)
             model = None
             if re.match(r'^user_.*?_org$', event_type) is not None:
                 model = request.env['hr.employee']
