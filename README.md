@@ -2,7 +2,6 @@
 适用于Odoo16版本的钉钉模块
 
 <div>  
-
 [![GitHub license](https://img.shields.io/github/license/xunonxyz/xy_dingtalk)](https://github.com/xunonxyz/xy_dingtalk/blob/master/LICENSE.md)
 [![GitHub issues](https://img.shields.io/github/issues/xunonxyz/xy_dingtalk)](https://github.com/xunonxyz/xy_dingtalk/issues)
 [![Odoo version](https://img.shields.io/badge/Odoo-16-brightgreen)](https://github.com/odoo/odoo/tree/16.0)
@@ -32,16 +31,16 @@
 
 ## ✨ 包含功能
 
-|                功能名称                |             是否支持             |
-| :------------------------------------: | :------------------------------: |
-|             多公司用户切换             |                √                 |
-|     钉钉应用access_token获取并缓存     |                √                 |
-|    钉钉应用通讯录部门、成员一键同步    |                √                 |
-|      钉钉通讯录部门、成员变更回调      | 有点回调问题，正在钉钉提工单核实 |
-| 钉钉二维码扫码登录系统(有widget可使用) |                √                 |
-|          钉钉网页跳转登录系统          |                √                 |
-|             向钉钉上传素材             |                √                 |
-|           推送钉钉各类型消息           |                √                 |
+|                功能名称                | 是否支持 |
+| :------------------------------------: | :------: |
+|             多公司用户切换             |    √     |
+|     钉钉应用access_token获取并缓存     |    √     |
+|    钉钉应用通讯录部门、成员一键同步    |    √     |
+|      钉钉通讯录部门、成员变更回调      |    √     |
+| 钉钉二维码扫码登录系统(有widget可使用) |    √     |
+|          钉钉网页跳转登录系统          |    √     |
+|             向钉钉上传素材             |    √     |
+|           推送钉钉各类型消息           |    √     |
 
 ## ✨ 后续其他计划
 
