@@ -2,6 +2,7 @@
 适用于Odoo16版本的钉钉模块
 
 <div>  
+
 [![GitHub license](https://img.shields.io/github/license/xunonxyz/xy_dingtalk)](https://github.com/xunonxyz/xy_dingtalk/blob/master/LICENSE.md)
 [![GitHub issues](https://img.shields.io/github/issues/xunonxyz/xy_dingtalk)](https://github.com/xunonxyz/xy_dingtalk/issues)
 [![Odoo version](https://img.shields.io/badge/Odoo-16-brightgreen)](https://github.com/odoo/odoo/tree/16.0)
