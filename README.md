@@ -80,6 +80,18 @@
 
 ![./static/img/log.png](./static/img/log.png)
 
+### 配置扫码登录后台
+
+扫码组件在模块内部作为一个widget进行封装，可以在任意地方进行使用，有两种方式进行使用
+1. 在view中能使用`<widget>`标签的地方使用`<widget name="ding_qrcode" app_id="传入app的在系统内的id"/>`即可
+2. 将使用owl进行封装的扫码组件进行引入，然后在需要使用的地方mount扫码组件，比如：
+```javascript
+import DingTalkQrcode from '@xy_dingtalk/js/ding_qrcode_widget';
+const { mount } = owl;
+
+mount(DingTalkQrcode, document.body, { props: {appId: '传入app的在系统内的id'} });
+```
+
 ## ❤️ 支持
 
 富能通企业官网：https://www.funenc.com/
