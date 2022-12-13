@@ -61,3 +61,5 @@ DingTalkQrcode.extractProps = ({attrs}) => {
 };
 
 registry.category("view_widgets").add("ding_qrcode", DingTalkQrcode);
+
+export default DingTalkQrcode;
