@@ -122,4 +122,17 @@ class DingTalkController(http.Controller):
                     func(content, app)
         return json.dumps(ding_callback_crypto.getEncryptedMap('success'))
 
-
+    @route('/ding/testApi', auth='public')
+    def test_api(self):
+        app = request.env['dingtalk.app'].sudo().search([], limit=1)
+        ding_request = ding_request_instance(app.app_key, app.app_secret)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        task = loop.create_task(ding_request.update_custom_oa_instance_state(
+            'Exq13TDhQ2qvGscT7qGB5w05641672823259',
+            'COMPLETED',
+            'agree'
+        ))
+        loop.run_until_complete(task)
+        loop.close()
+        print(task.result())
