@@ -101,7 +101,7 @@ class DingTalkController(http.Controller):
     @route('/ding/mail_list/callback/<string:agent_id>', type='http', auth='public', csrf=False)
     def ding_callback(self, agent_id, signature, timestamp, nonce):
         data = json.loads(request.httprequest.data.decode('utf-8'))
-        app = request.env['dingtalk.app'].sudo().search([('agentid', '=', agent_id)])
+        app = request.env['dingtalk.app'].sudo().search([('agentid', '=', agent_id)], limit=1)
 
         ding_callback_crypto = DingCallbackCrypto3(app.token, app.encoding_aes_key, app.app_key)
         content = json.loads(ding_callback_crypto.getDecryptMsg(
@@ -115,6 +115,8 @@ class DingTalkController(http.Controller):
                 model = request.env['hr.employee']
             elif re.match(r'^org_dept_.*?$', event_type) is not None:
                 model = request.env['hr.department']
+            elif re.match(r'^bpms_.*?$', event_type) is not None:
+                model = request.env['dingtalk.app']
 
             if model is not None:
                 func = getattr(model, f'on_ding_{event_type}', None)

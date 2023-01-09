@@ -79,6 +79,24 @@ class App(models.Model):
                     'warning': True if is_success else False
                 })
 
+    def on_ding_bpms_task_change(self, content, app):
+        """
+        when dingtalk bpms task change the method will be callback, can override this method in model
+        :param content: dingtalk bpms task change content
+        :param app:
+        :return:
+        """
+        pass
+
+    def on_ding_bpms_instance_change(self, content, app):
+        """
+        when dingtalk bpms instance change the method will be callback, can override this method in model
+        :param content: dingtalk bpms instance change content
+        :param app:
+        :return:
+        """
+        pass
+
     @api.model
     @to_sync
     async def upload_media(self, media_type, media_file, filename):
