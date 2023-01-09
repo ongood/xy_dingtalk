@@ -299,7 +299,6 @@ class DingRequest(object):
         :return:
         """
         assert name is not None, 'name is required'
-        assert len(form_components) > 0, "form_components's length must be greater than 0"
         response = await self.post_response(
             join_url(self.new_api_url_prefix, 'v1.0/workflow/processCentres/schemas'), {
                 'processCode': process_code,
@@ -534,7 +533,6 @@ class DingRequest(object):
         :return:
         """
         assert name is not None, 'name is required'
-        assert len(form_components) > 0, "form_components's length must be greater than 0"
         response = await self.post_response(
             join_url(self.new_api_url_prefix, '/v1.0/workflow/forms'), {
                 'processCode': process_code,
@@ -549,7 +547,329 @@ class DingRequest(object):
         )
         check_new_response_error(response)
         return response['result']
-    # endregion
+
+    async def get_official_oa_form_schemas(self, process_code, app_uuid=None):
+        """
+        get official oa form schemas
+        :param process_code: process code
+        :param app_uuid: Application builds quarantine information
+        :return:
+        """
+        assert process_code is not None, 'process_code is required'
+        response = await self.get_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/forms/schemas/processCodes'), {
+                'processCode': process_code,
+                'appUuid': app_uuid
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def get_official_oa_processes_nodes(self, process_code, dept_id, user_id, form_component_values):
+        """
+        get official oa processes nodes
+        :param process_code: process code
+        :param dept_id: dingtalk id of the department of the employee who is to send the approval order
+        :param user_id: dingtalk id of the user who is to send the approval order
+        :param form_component_values: form component values
+        :return:
+        """
+        assert process_code is not None, 'process_code is required'
+        assert dept_id is not None, 'dept_id is required'
+        assert user_id is not None, 'user_id is required'
+        response = await self.post_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processes/forecast'), {
+                'processCode': process_code,
+                'deptId': dept_id,
+                'userId': user_id,
+                'formComponentValues': form_component_values
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def create_official_oa_instance(self, originator_user_id, process_code, form_component_values, dept_id=None,
+                                          microapp_agent_id=None, approvers=None, cc_list=None, cc_position=None,
+                                          target_select_actioners=None):
+        """
+        create official oa instance
+        :param originator_user_id: Approval sponsor dingtalk id
+        :param process_code: process code
+        :param form_component_values: form component values
+        :param dept_id: dingtalk id of the department of the employee who is to send the approval order
+        :param microapp_agent_id: Application identification AgentId
+        :param approvers: A list of approvers specified directly when the approval flow template is not used
+        :param cc_list: carbon copy recipients dingtalk id list
+        :param cc_position: carbon copy recipients time
+        :param target_select_actioners: When using the approval flow template, the mandatory list of optional operators on the node rule in the process prediction result
+        :return:
+        """
+        assert originator_user_id is not None, 'originator_user_id is required'
+        assert process_code is not None, 'process_code is required'
+        assert form_component_values is not None, 'form_component_values is required'
+        response = await self.post_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processInstances'), {
+                'originatorUserId': originator_user_id,
+                'deptId': dept_id,
+                'processCode': process_code,
+                'formComponentValues': form_component_values,
+                'microappAgentId': microapp_agent_id,
+                'approvers': approvers,
+                'ccList': cc_list,
+                'ccPosition': cc_position,
+                'targetSelectActioners': target_select_actioners
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['instanceId']
+
+    async def get_official_oa_instance_id_list(self, process_code, start_time, end_time=None, next_token=None,
+                                               max_results=20, user_ids=None, statuses=None):
+        """
+        get official oa instance id list
+        :param process_code: process code
+        :param start_time: start timestamp
+        :param end_time: end timestamp
+        :param next_token: page cursor, the first page is not required
+        :param max_results: page size, max is 20
+        :param user_ids: user dingtalk ids who created the instance
+        :param statuses: NEW/RUNNING/COMPLETED/TERMINATED/CANCELED
+        :return:
+        """
+        assert process_code is not None, 'process_code is required'
+        assert start_time is not None, 'start_time is required'
+        response = await self.post_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processes/instanceIds/query'), {
+                'processCode': process_code,
+                'startTime': start_time,
+                'endTime': end_time,
+                'nextToken': next_token,
+                'maxResults': max_results,
+                'userIds': user_ids,
+                'statuses': statuses
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def get_official_oa_instance_detail(self, process_instance_id):
+        """
+        get official oa instance
+        :param process_instance_id: process instance id
+        :return:
+        """
+        assert process_instance_id is not None, 'process_instance_id is required'
+        response = await self.get_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processInstances'), {
+                'processInstanceId': process_instance_id
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def redirect_official_oa_task(self, task_id, to_user_id, operate_user_id, remark=None, action_name=None):
+        """
+        redirect official oa task
+        :param task_id: OA task id
+        :param to_user_id: the user dingtalk id to be redirected to
+        :param operate_user_id: Operator dingtalk id
+        :param remark: remark
+        :param action_name: action node name
+        :return:
+        """
+        assert task_id is not None, 'task_id is required'
+        assert to_user_id is not None, 'to_user_id is required'
+        assert operate_user_id is not None, 'operate_user_id is required'
+        response = await self.post_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/tasks/redirect'), {
+                'taskId': task_id,
+                'toUserId': to_user_id,
+                'operateUserId': operate_user_id,
+                'remark': remark,
+                'actionName': action_name
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def get_official_oa_spaces_infos(self, user_id, agent_id=None):
+        """
+        get official oa spaces infos
+        :param user_id: dingtalk user id
+        :param agent_id: app agent id
+        :return:
+        """
+        assert user_id is not None, 'user_id is required'
+        response = await self.post_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processInstances/spaces/infos/query'), {
+                'userId': user_id,
+                'agentId': agent_id
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def create_official_oa_approve_comment(self, process_instance_id, text, comment_user_id, file=None):
+        """
+        create official oa approve comment
+        :param process_instance_id: process instance id
+        :param text: comment content
+        :param comment_user_id: comment user dingtalk id
+        :param file: comment dingtalk file info, reference to https://open.dingtalk.com/document/orgapp-server/add-an-approval-comment-pop
+        :return:
+        """
+        assert process_instance_id is not None, 'process_instance_id is required'
+        assert text is not None, 'text is required'
+        assert comment_user_id is not None, 'comment_user_id is required'
+        response = await self.post_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processInstances/comments'), {
+                'processInstanceId': process_instance_id,
+                'text': text,
+                'commentUserId': comment_user_id,
+                'file': file
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def execute_official_oa_task(self, process_instance_id, task_id, result, actioner_user_id, remark=None,
+                                       file=None):
+        """
+        execute official oa task
+        :param process_instance_id: process instance id
+        :param task_id: task id
+        :param result: agree or refuse
+        :param actioner_user_id: actioner user dingtalk id
+        :param remark: remark
+        :param file: dingtalk file info
+        :return:
+        """
+        assert process_instance_id is not None, 'process_instance_id is required'
+        assert task_id is not None, 'task_id is required'
+        assert result == 'agree' or result == 'refuse', 'result must be agree or refuse'
+        assert actioner_user_id is not None, 'actioner_user_id is required'
+        response = await self.post_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processInstances/execute'), {
+                'processInstanceId': process_instance_id,
+                'taskId': task_id,
+                'result': result,
+                'actionerUserId': actioner_user_id,
+                'remark': remark,
+                'file': file
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def terminate_official_oa_instance(self, process_instance_id, operating_user_id=None, is_system=None,
+                                             remark=None):
+        """
+        terminate official oa instance
+        :param process_instance_id: process instance id
+        :param operating_user_id: user dingtalk id who terminate instance
+        :param remark: remark
+        :param is_system: is system terminate
+        :return:
+        """
+        assert process_instance_id is not None, 'process_instance_id is required'
+        response = await self.post_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processInstances/terminate'), {
+                'processInstanceId': process_instance_id,
+                'operatingUserId': operating_user_id,
+                'remark': remark,
+                'isSystem': is_system
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def get_official_oa_todo_tasks_number(self, user_id):
+        """
+        get official oa to do tasks number
+        :param user_id: who's to do tasks number in select
+        :return:
+        """
+        assert user_id is not None, 'user_id is required'
+        response = await self.get_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processes/todoTasks/numbers'), {
+                'userId': user_id
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def get_user_official_oa_tasks(self, user_id, max_results=100, next_token=None):
+        """
+        get specified user's official oa tasks
+        :param user_id: who's to do tasks in select
+        :param max_results: page size, max is 100
+        :param next_token: page cursor, first page is None
+        :return:
+        """
+        assert user_id is not None, 'user_id is required'
+        response = await self.get_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processes/userVisibilities/templates'), {
+                'userId': user_id,
+                'maxResults': max_results,
+                'nextToken': next_token
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+
+    async def get_user_official_oa_templates(self, user_id):
+        """
+        get the form templates which user has a manageable approval form in the current enterprise
+        :return:
+        """
+        assert user_id is not None, 'user_id is required'
+        response = await self.get_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/processes/managements/templates'), {
+                'userId': user_id
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
+# endregion
 
 
 def ding_request_instance(app_key, app_secret):

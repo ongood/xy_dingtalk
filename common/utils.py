@@ -3,7 +3,7 @@ import functools
 import asyncio
 
 
-def aio_func(func):
+def to_sync(func):
     """
     Decorator to run a function in a new event loop
     :param func:
