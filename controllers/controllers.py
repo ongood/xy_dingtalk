@@ -121,28 +121,3 @@ class DingTalkController(http.Controller):
                 if func:
                     func(content, app)
         return json.dumps(ding_callback_crypto.getEncryptedMap('success'))
-
-    @route('/ding/testApi', auth='public')
-    def test_api(self):
-        app = request.env['dingtalk.app'].sudo().search([], limit=1)
-        print(app.create_or_update_official_oa_template(
-            None, '测试官方OA模板2', [
-                {
-                    "componentType": "TextField",
-                    "props": {
-                        "componentId": "TextField-abcd",
-                        "label": "文本框",
-                        "required": True,
-                        "bizAlias": "TextField-bizAlias",
-                        "disabled": True
-                    }
-                },
-                {
-                    "componentType": "TextareaField",
-                    "props": {
-                        "placeholder": "请输入",
-                        "label": "多行输入框"
-                    }
-                },
-            ]
-        ))
