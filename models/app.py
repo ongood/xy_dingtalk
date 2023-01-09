@@ -1,17 +1,14 @@
 import asyncio
-import datetime
 import threading
 import time
 import traceback
 
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 from odoo.tools.translate import _
 
 from ..common.ding_request import ding_request_instance
-
-
-def get_now_time_str():
-    return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+from ..common.utils import aio_func, get_now_time_str, list_to_str
 
 
 class App(models.Model):
@@ -81,3 +78,62 @@ class App(models.Model):
                     'message': f'Sync organization end, {"success" if is_success else "failed"}',
                     'warning': True if is_success else False
                 })
+
+    @api.model
+    @aio_func
+    async def upload_media(self, media_type, media_file, filename):
+        """
+        upload media to DingTalk
+        :param media_type: image, voice, video or file
+        :param media_file: media file
+        :param filename: media filename
+        :return: media_id
+        """
+        ding_request = ding_request_instance(self.app_key, self.app_secret)
+        return await ding_request.upload_media(media_type, media_file, filename)
+
+    @api.model
+    @aio_func
+    async def send_ding_message(self, to_users, msg, to_departments=None):
+        """
+        send message in Dingtalk
+        :param to_users: dingtalk user ding_userid list, if to all user, set to 'to_all_user'
+        :param to_departments: dingtalk department ding_id list
+        :param msg: other parameters, reference https://open.dingtalk.com/document/orgapp-server/message-types-and-data-format
+        :return: message id
+        """
+        assert msg, 'msg is required'
+        if len(to_users) == 0 and len(to_departments) == 0:
+            raise UserError(_('Please select the user or department to send the message!'))
+
+        ding_request = ding_request_instance(self.app_key, self.app_secret)
+
+        userid_list = None if to_users == 'to_all_user' else list_to_str(to_users)
+        to_all_user = None if to_users != 'to_all_user' else True
+
+        return await ding_request.send_message(dict(
+            agentid=self.agentid,
+            agent_id=self.agentid,
+            userid_list=userid_list,
+            to_all_user=to_all_user,
+            dept_id_list=list_to_str(to_departments),
+            msg=msg
+        ))
+
+    @api.model
+    @aio_func
+    async def create_or_update_official_oa_template(self, process_code, name, form_components, description=None,
+                                                    template_config=None):
+        """
+        create or update official OA template
+        :param process_code: process code
+        :param name: template name
+        :param form_components: form components list
+        :param description: template description
+        :param template_config: template global config
+        :return:
+        """
+        ding_request = ding_request_instance(self.app_key, self.app_secret)
+        return await ding_request.create_or_update_official_oa_template(
+            process_code, name, form_components, description, template_config
+        )

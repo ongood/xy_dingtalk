@@ -1,19 +1,8 @@
 import asyncio
 
-from odoo import models, fields, api, _, SUPERUSER_ID
-from odoo.exceptions import UserError
+from odoo import models, fields, api, SUPERUSER_ID
+
 from ..common.ding_request import ding_request_instance
-
-
-def send_list_to_str(send_list):
-    """
-    convert send list to str
-    :param send_list: ding_id list or None
-    :return:
-    """
-    if send_list is None:
-        return send_list
-    return ','.join(send_list)
 
 
 class Employee(models.Model):
@@ -136,41 +125,6 @@ class Employee(models.Model):
                 self.ding_create_with_user(create_vals) if sync_with_user else self.create(create_vals)
         if manager_id:
             ding_department.write({'manager_id': self.search([('ding_id', '=', manager_id)]).id})
-
-    def send_ding_message(self, app_id, to_users, to_departments=None, msg=None):
-        """
-        send message in Dingtalk
-        :param app_id: dingtalk app id used to send message
-        :param to_users: dingtalk user ding_userid list, if to all user, set to 'to_all_user'
-        :param to_departments: dingtalk department ding_id list
-        :param msg: other parameters, reference https://open.dingtalk.com/document/orgapp-server/message-types-and-data-format
-        :return: message id
-        """
-        assert app_id, 'app_id is required'
-        assert msg, 'msg is required'
-        if len(to_users) == 0 and len(to_departments) == 0:
-            raise UserError(_('Please select the user or department to send the message!'))
-
-        app = self.env['dingtalk.app'].sudo().browse(int(app_id))
-        ding_request = ding_request_instance(app.app_key, app.app_secret)
-
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        userid_list = None if to_users == 'to_all_user' else send_list_to_str(to_users)
-        to_all_user = None if to_users != 'to_all_user' else True
-
-        send_message_task = loop.create_task(ding_request.send_message(dict(
-            agentid=app.agentid,
-            agent_id=app.agentid,
-            userid_list=userid_list,
-            to_all_user=to_all_user,
-            dept_id_list=send_list_to_str(to_departments),
-            msg=msg
-        )))
-        loop.run_until_complete(send_message_task)
-        loop.close()
-        return send_message_task.result()
 
     @staticmethod
     def get_user_info_by_ding_ids(app_key, app_secret, ding_ids):

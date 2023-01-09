@@ -299,6 +299,7 @@ class DingRequest(object):
         :return:
         """
         assert name is not None, 'name is required'
+        assert len(form_components) > 0, "form_components's length must be greater than 0"
         response = await self.post_response(
             join_url(self.new_api_url_prefix, 'v1.0/workflow/processCentres/schemas'), {
                 'processCode': process_code,
@@ -517,6 +518,37 @@ class DingRequest(object):
         )
         check_new_response_error(response)
         return response['success']
+
+    # endregion
+
+    # region official OA
+    async def create_or_update_official_oa_template(self, process_code, name, form_components, description=None,
+                                                    template_config=None):
+        """
+        create or update official oa template
+        :param process_code: process code
+        :param name: template name
+        :param form_components: form components list
+        :param description: template description
+        :param template_config: template global config
+        :return:
+        """
+        assert name is not None, 'name is required'
+        assert len(form_components) > 0, "form_components's length must be greater than 0"
+        response = await self.post_response(
+            join_url(self.new_api_url_prefix, '/v1.0/workflow/forms'), {
+                'processCode': process_code,
+                'name': name,
+                'description': description,
+                'formComponents': form_components,
+                'templateConfig': template_config
+            },
+            headers={
+                'x-acs-dingtalk-access-token': await self.latest_token()
+            }
+        )
+        check_new_response_error(response)
+        return response['result']
     # endregion
 
 
