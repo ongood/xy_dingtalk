@@ -42,10 +42,10 @@
 |          钉钉网页跳转登录系统          |    √     |
 |             向钉钉上传素材             |    √     |
 |           推送钉钉各类型消息           |    √     |
+|               钉钉OA审批               |    √     |
 
 ## ✨ 后续其他计划
 
-- 升级钉钉、企业微信模块，支持oa审批
 - odoo工作流模块，对标java的Camunda工作流实现，可在线编辑
 - odoo oa模块
 - odoo商城模块
@@ -56,13 +56,41 @@
 
 注：因为odoo的hr模块是以部门为单位进行管理，所以目前仅支持同步钉钉应用可见范围以部门为单位的情况，有单独可见人员时不会同步单独可见人员
 
+以下说明文档包含关键配置使用，其余具体调用函数请到源码自行查看  
+
 ### 配置钉钉应用参数
+
+#### 在钉钉中配置
+
+> 注：以下两个配置在保存时企业微信均会发送请求到配置的地址进行验证，故需要企业微信和odoo配置同时进行 
+
+##### 事件回调参数
+
+> 把需要用到的权限全部勾选上（不清楚需要哪些就把红框内的三种权限全部勾选）
+
+![./static/img/ding-role.png](./static/img/ding-role.png)
+
+
+
+> 获取钉钉事件回调的aes_key和token，并配置请求回调地址为`{odoo服务器地址，不能使用localhost}/ding/mail_list/callback/{回调时对应的应用的agent_id}`，具体接口见代码controllers/controllers:ding_callback
+
+![./static/img/ding-config.png](./static/img/ding-config.png)
+
+
+
+#### 在odoo中配置
 
 在「Odoo系统 - 设置 - 用户&公司」页面，选中公司后切换到「钉钉应用」选项卡进行参数配置
 
-注：如果勾选了应用中的「同步员工到res.user」则在保存hr.employee记录时也会创建res.users记录，否则仅创建hr.employee
+注：如果勾选了应用中的「同步员工到res.user」则在保存hr.employee记录时也会创建res.users记录，否则仅创建hr.employee   
 
 ![./static/img/setting.png](./static/img/setting.png)
+
+##### 配置回调参数
+
+将在钉钉中生成的aes_key和token填入参数处   
+
+
 
 ### 同步
 
